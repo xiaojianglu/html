@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电影展示页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft Yahei", sans-serif;
+            background: linear-gradient(135deg, #100720, #2a0f4a, #1a0b2e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 60px;
+        }
+
+        /* 粒子背景 */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* 导航栏 */
+        nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.2rem 2rem;
+            background: rgba(10, 25, 41, 0.4);
+            backdrop-filter: blur(8px);
+            position: relative;
+            width: 100%;
+        }
+        .nav-center {
+            display: flex;
+            gap: 3rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .nav-item {
+            padding: 0.5rem 0;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+            font-size: 1.1rem;
+        }
+        .nav-item.active {
+            color: #ff6b81;
+        }
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #ff6b81;
+            transition: width 0.3s;
+        }
+        .nav-item.active::after {
+            width: 100%;
+        }
+        a.nav-item {
+            text-decoration: none;
+            color: inherit;
+        }
+        .nav-left {
+            z-index: 10;
+        }
+        .nav-home {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 107, 129, 0.2);
+            color: #ff6b81;
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .nav-home:hover {
+            background: rgba(255, 107, 129, 0.4);
+            transform: scale(1.1);
+        }
+        .nav-right {
+            margin-left: auto;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-btn {
+            padding: 7px 20px;
+            background: #ff6b81;
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .nav-btn:hover {
+            background: #ff8fa3;
+            transform: scale(1.05);
+        }
+
+        /* 标题 */
+        .page-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin: 3rem 0 2rem;
+            color: #e9d8ff;
+            text-shadow: 0 0 15px rgba(180, 120, 255, 0.5);
+        }
+
+        /* 电影卡片容器 —— 一行固定4个 */
+        .movie-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 固定一行4个 */
+            gap: 30px; /* 加大间距 */
+        }
+
+        /* 电影小卡片 —— 拉大尺寸 */
+        .movie-card {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 22px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(200, 150, 255, 0.2);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-6px);
+            background: rgba(170, 120, 255, 0.15);
+            box-shadow: 0 8px 25px rgba(150, 80, 255, 0.25);
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: 340px; /* 加大图片高度 */
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+
+        .movie-card h3 {
+            font-size: 1.1rem;
+            color: #f0e4ff;
+        }
+
+        /* 弹窗 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a0b2e;
+            max-width: 700px;
+            width: 100%;
+            padding: 36px;
+            border-radius: 24px;
+            border: 1px solid rgba(180, 120, 255, 0.3);
+            color: #eee;
+            position: relative;
+        }
+
+        .modal-content h2 {
+            color: #e4cfff;
+            margin-bottom: 16px;
+        }
+
+        .modal-content .desc {
+            line-height: 1.7;
+            margin: 16px 0;
+            color: #d4c1f0;
+        }
+
+        .modal-content .quote {
+            font-style: italic;
+            color: #f8c8ff;
+            padding-left: 16px;
+            border-left: 3px solid #b47fff;
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-size: 1.6rem;
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        /* 添加按钮 */
+        .add-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(90deg, #ff6b81, #ff8fa3);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .add-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(255, 107, 129, 0.4);
+        }
+        .add-btn.added {
+            background: #4caf50;
+        }
+
+        /* 购物车图标 */
+        .nav-cart {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 107, 129, 0.2);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+        .nav-cart:hover {
+            background: rgba(255, 107, 129, 0.4);
+            transform: scale(1.1);
+        }
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff6b81;
+            color: #fff;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* 购物车弹窗 */
+        .cart-modal .modal-content {
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .cart-list {
+            margin-top: 20px;
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .cart-item img {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-title {
+            font-size: 1rem;
+            color: #e4cfff;
+            margin-bottom: 5px;
+        }
+        .cart-item-remove {
+            padding: 6px 12px;
+            background: rgba(255, 107, 129, 0.3);
+            border: none;
+            border-radius: 15px;
+            color: #ff6b81;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .cart-item-remove:hover {
+            background: rgba(255, 107, 129, 0.5);
+        }
+        .cart-empty {
+            text-align: center;
+            color: #888;
+            padding: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 粒子背景 -->
+    <canvas id="particles"></canvas>
+
+    <!-- 导航栏 -->
+    <nav id="nav">
+        <div class="nav-left">
+            <a href="Previous.html" class="nav-home" title="返回首页">🏠</a>
+        </div>
+        <div class="nav-center">
+            <a href="home.html" class="nav-item" data-page="home">主页</a>
+            <div class="nav-item active" data-page="show">电影合集</div>
+            <a href="games.html" class="nav-item" data-page="games">游戏厅</a>
+        </div>
+        <div class="nav-right">
+            <div class="nav-cart" id="cartBtn" title="我的收藏">
+                🛒
+                <span class="cart-count" id="cartCount">0</span>
+            </div>
+            <button class="nav-btn" onclick="alert('切换账号')">切换账号</button>
+        </div>
+    </nav>
+
+    <!-- 标题 -->
+    <h1 class="page-title">🎬 经典电影合集</h1>
+
+    <!-- 电影卡片 -->
+    <div class="movie-container" id="movieList"></div>
+
+    <!-- 弹窗 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <p class="desc" id="modalDesc"></p>
+            <p class="quote" id="modalQuote"></p>
+            <button class="add-btn" id="addBtn">❤️ 添加到收藏</button>
+        </div>
+    </div>
+
+    <!-- 购物车弹窗 -->
+    <div class="modal cart-modal" id="cartModal">
+        <div class="modal-content">
+            <span class="close" id="cartClose">&times;</span>
+            <h2>📦 我的收藏</h2>
+            <div class="cart-list" id="cartList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========================= 电影数据 =========================
+        const moviesRaw = [
+            { id: 1, title: "🎬 超能陆战队", img: "0.avif", desc: "迪士尼暖心动画，天才少年小宏与医疗机器人大白化身超能英雄，拯救城市。温柔与勇气永远是最强大的力量。", quote: "你不必完美，只需要做自己。" },
+            { id: 2, title: "🎬 当幸福来敲门", img: "OIP-C.webp", desc: "教育意义神作。生活再难，坚持与努力终会迎来曙光，父子情深催人泪下。", quote: "别让任何人告诉你，你成不了才。" },
+            { id: 3, title: "🎬 三傻大闹宝莱坞", img: "R-C.png", desc: "喜剧+教育神作。讽刺填鸭式教育，告诉我们要追求热爱，活成自己想要的样子。", quote: "追求卓越，成功就会在不经意间追上你。" },
+            { id: 4, title: "🎬 寻梦环游记", img: "v2-81445f5ad6c8ab85a49875f668eccf72_r.jpg", desc: "皮克斯治愈动画，关于家人、梦想与死亡的教育故事，温暖又有深度。", quote: "真正的死亡，是世界上再也没有人记得你。" },
+            { id: 5, title: "🎬 美丽人生", img: "R-C.jpg", desc: "父爱与勇气的极致表达，用喜剧演绎悲剧，教会我们乐观与守护。", quote: "早安，公主！" },
+            { id: 6, title: "🎬 肖申克的救赎", img: "OIP-C.jpg", desc: "人生必看教育经典。希望与自由是人类最宝贵的东西，永远不要放弃自己。", quote: "懦怯囚禁人的灵魂，希望可以感受自由。" },
+            { id: 7, title: "🎬 千与千寻", img: "20631d42ee9cc661086aeea3ce9262736896d2542993d9-8gP1S0_fw658.webp", desc: "宫崎骏经典神作，成长、善良与不忘初心，治愈无数人的成长寓言。", quote: "不管前方的路有多苦，只要方向正确，都比站在原地更幸福。" },
+            { id: 8, title: "🎬 心灵奇旅", img: "xinling.webp", desc: "治愈系教育动画，重新定义生命的意义：活在当下，感受每一刻美好。", quote: "生活的目标，就是活着。" },
+            { id: 9, title: "🎬 阿甘正传", img: "agan.webp", desc: "人生教科书级电影。坚持、善良、简单，往往能创造最伟大的人生。", quote: "生活就像一盒巧克力，你永远不知道下一颗是什么。" },
+            { id: 10, title: "🎬 疯狂动物城", img: "20200730151716_cctls.png", desc: "励志喜剧动画，打破偏见、坚持梦想，每个人都能成为最好的自己。", quote: "任何人都能成为任何模样。" },
+            { id: 11, title: "🎬 星际穿越", img: "xingji.jpg", desc: "科幻与爱的教育史诗，爱是唯一可以穿越时间与空间的力量。", quote: "爱是唯一可以超越时间与维度的事物。" },
+            { id: 12, title: "🎬 触不可及", img: "t0121e3833405e738b7.jpg", desc: "温情喜剧，阶级、肤色、性格完全不同的人成为挚友，教会我们尊重与理解。", quote: "真正的尊重，是把对方当普通人。" },
+            { id: 13, title: "🎬 飞屋环游记", img: "feiwu.webp", desc: "冒险与陪伴的治愈动画，梦想与爱情，勇气与陪伴。", quote: "幸福，不是长生不老，而是每一个微小愿望的达成。" },
+            { id: 14, title: "🎬 流浪地球", img: "liulang.webp", desc: "中国科幻里程碑，家国情怀与人类命运共同体。", quote: "希望，是比钻石更珍贵的东西。" },
+            { id: 15, title: "🎬 长津湖", img: "cjh.jpg", desc: "爱国教育战争片，铭记历史，珍惜和平，致敬英雄。", quote: "我们把该打的仗都打了，后代就不用打了。" },
+        ];
+
+        // ========================= 收藏功能 =========================
+        let favorites = JSON.parse(localStorage.getItem('movieFavorites')) || [];
+        let currentMovie = null;
+
+        // 更新购物车数量
+        function updateCartCount() {
+            document.getElementById('cartCount').textContent = favorites.length;
+        }
+
+        // 检查是否已收藏
+        function isFavorite(id) {
+            return favorites.some(m => m.id === id);
+        }
+
+        // 更新按钮状态
+        function updateAddBtn() {
+            const btn = document.getElementById('addBtn');
+            if (currentMovie && isFavorite(currentMovie.id)) {
+                btn.textContent = '✅ 已收藏';
+                btn.classList.add('added');
+            } else {
+                btn.textContent = '❤️ 添加到收藏';
+                btn.classList.remove('added');
+            }
+        }
+
+        // 渲染购物车列表
+        function renderCartList() {
+            const list = document.getElementById('cartList');
+            if (favorites.length === 0) {
+                list.innerHTML = '<div class="cart-empty">暂无收藏的电影</div>';
+                return;
+            }
+            list.innerHTML = favorites.map(m => `
+                <div class="cart-item">
+                    <img src="${m.img}" alt="${m.title}">
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${m.title}</div>
+                    </div>
+                    <button class="cart-item-remove" onclick="removeFavorite(${m.id})">移除</button>
+                </div>
+            `).join('');
+        }
+
+        // 添加收藏
+        function addFavorite() {
+            if (!currentMovie) return;
+            if (isFavorite(currentMovie.id)) {
+                // 已收藏则移除
+                favorites = favorites.filter(m => m.id !== currentMovie.id);
+            } else {
+                favorites.push(currentMovie);
+            }
+            localStorage.setItem('movieFavorites', JSON.stringify(favorites));
+            updateCartCount();
+            updateAddBtn();
+        }
+
+        // 移除收藏
+        function removeFavorite(id) {
+            favorites = favorites.filter(m => m.id !== id);
+            localStorage.setItem('movieFavorites', JSON.stringify(favorites));
+            updateCartCount();
+            renderCartList();
+        }
+
+        // ========================= 渲染电影卡片 =========================
+        const list = document.getElementById('movieList');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+        const modalQuote = document.getElementById('modalQuote');
+        const close = document.querySelector('#modal .close');
+        const addBtn = document.getElementById('addBtn');
+
+        moviesRaw.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.innerHTML = `
+                <img src="${m.img}" alt="${m.title}">
+                <h3>${m.title}</h3>
+            `;
+            card.onclick = () => {
+                currentMovie = m;
+                modalTitle.innerText = m.title;
+                modalDesc.innerText = m.desc;
+                modalQuote.innerText = m.quote;
+                updateAddBtn();
+                modal.classList.add('show');
+            };
+            list.appendChild(card);
+        });
+
+        close.onclick = () => modal.classList.remove('show');
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.remove('show');
+        };
+        addBtn.onclick = addFavorite;
+
+        // 购物车弹窗
+        const cartBtn = document.getElementById('cartBtn');
+        const cartModal = document.getElementById('cartModal');
+        const cartClose = document.getElementById('cartClose');
+
+        cartBtn.onclick = () => {
+            renderCartList();
+            cartModal.classList.add('show');
+        };
+        cartClose.onclick = () => cartModal.classList.remove('show');
+        cartModal.onclick = (e) => {
+            if (e.target === cartModal) cartModal.classList.remove('show');
+        };
+
+        // 初始化购物车数量
+        updateCartCount();
+
+        // ========================= 圆点全屏随机扩散 =========================
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let w = canvas.width = window.innerWidth;
+        let h = canvas.height = window.innerHeight;
+
+        class Dot {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.r = Math.random() * 2 + 0.8;
+                // 完全随机飘动，不跟随鼠标，全屏散开
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                if(this.x < 0 || this.x > w) this.speedX *= -1;
+                if(this.y < 0 || this.y > h) this.speedY *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fill();
+            }
+        }
+
+        const dots = Array.from({ length: 120 }, () => new Dot());
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            dots.forEach(d => { d.update(); d.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        });
+
+        // 导航栏切换功能
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
